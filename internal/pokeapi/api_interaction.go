@@ -1,4 +1,4 @@
-package internal
+package pokeapi
 
 import (
 	"encoding/json"
@@ -19,7 +19,7 @@ type LocationAreaResponse struct {
 	Url  string `json:"url"`
 }
 
-func getLocationNames(url string) ([]string, string, string, error) {
+func GetLocationNames(url string) ([]string, string, string, error) {
 	// make HTTP GET request
 	res, err := http.Get(url)
 	if err != nil {
