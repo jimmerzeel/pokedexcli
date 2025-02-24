@@ -7,12 +7,13 @@ import (
 	"strings"
 
 	"github.com/jimmerzeel/pokedexcli/internal/pokeapi"
+	"github.com/jimmerzeel/pokedexcli/internal/pokecache"
 )
 
 type cliCommand struct {
 	name        string
 	description string
-	callback    func(*config) error
+	callback    func(*config, *pokecache.Cache) error
 }
 
 type config struct {
@@ -20,7 +21,7 @@ type config struct {
 	previous string
 }
 
-func startRepl(cfg *config) {
+func startRepl(cfg *config, cache *pokecache.Cache) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Print("Pokedex > ")
@@ -34,7 +35,7 @@ func startRepl(cfg *config) {
 		commandName := text[0]
 
 		if command, ok := getCommands()[commandName]; ok {
-			command.callback(cfg)
+			command.callback(cfg, cache)
 		} else {
 			fmt.Println("Unknown command")
 		}
@@ -73,13 +74,13 @@ func getCommands() map[string]cliCommand {
 	}
 }
 
-func commandExit(cfg *config) error {
+func commandExit(cfg *config, cache *pokecache.Cache) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func commandHelp(cfg *config) error {
+func commandHelp(cfg *config, cache *pokecache.Cache) error {
 	fmt.Print("Welcome to the Pokedex!\nUsage:\n\n")
 
 	for _, v := range getCommands() {
@@ -89,7 +90,7 @@ func commandHelp(cfg *config) error {
 	return nil
 }
 
-func commandMap(cfg *config) error {
+func commandMap(cfg *config, cache *pokecache.Cache) error {
 	// if this is the first call, use the base url, otherwise use the one in config
 	url := "https://pokeapi.co/api/v2/location-area"
 	if cfg.next != "" {
@@ -97,7 +98,7 @@ func commandMap(cfg *config) error {
 	}
 
 	// use pokeapi location-area endpoint to get the location areas
-	locations, next, previous, err := pokeapi.GetLocationNames(url)
+	locations, next, previous, err := pokeapi.GetLocationNames(url, cache)
 	if err != nil {
 		return err
 	}
@@ -114,7 +115,7 @@ func commandMap(cfg *config) error {
 	return nil
 }
 
-func commandMapBack(cfg *config) error {
+func commandMapBack(cfg *config, cache *pokecache.Cache) error {
 	// if this is the first call, use the base url, otherwise use the one in config
 	url := "https://pokeapi.co/api/v2/location-area"
 	if cfg.previous == "" {
@@ -125,7 +126,7 @@ func commandMapBack(cfg *config) error {
 	}
 
 	// use pokeapi location-area endpoint to get the location areas
-	locations, next, previous, err := pokeapi.GetLocationNames(url)
+	locations, next, previous, err := pokeapi.GetLocationNames(url, cache)
 	if err != nil {
 		return err
 	}

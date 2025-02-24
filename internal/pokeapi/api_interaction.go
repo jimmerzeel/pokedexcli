@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+
+	"github.com/jimmerzeel/pokedexcli/internal/pokecache"
 )
 
 // match the API structure
@@ -19,8 +21,25 @@ type LocationAreaResponse struct {
 	Url  string `json:"url"`
 }
 
-func GetLocationNames(url string) ([]string, string, string, error) {
+func GetLocationNames(url string, cache *pokecache.Cache) ([]string, string, string, error) {
 	// make HTTP GET request
+	if item, present := cache.Get(url); present {
+		var mainResponse MainLocationResponse
+
+		// unmarshal cached data
+		if err := json.Unmarshal(item, &mainResponse); err != nil {
+			return []string{}, "", "", err
+		}
+
+		// prepare results from cache data
+		var locationNames []string
+		for _, loc := range mainResponse.Results {
+			locationNames = append(locationNames, loc.Name)
+		}
+
+		return locationNames, mainResponse.Next, mainResponse.Previous, nil
+	}
+
 	res, err := http.Get(url)
 	if err != nil {
 		return []string{}, "", "", err
@@ -32,6 +51,8 @@ func GetLocationNames(url string) ([]string, string, string, error) {
 	if err != nil {
 		return []string{}, "", "", err
 	}
+
+	cache.Add(url, data)
 
 	// unmarshal the data into a slice of bytes
 	var mainResponse MainLocationResponse
