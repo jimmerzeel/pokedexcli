@@ -13,6 +13,7 @@ type cacheEntry struct {
 type Cache struct {
 	items map[string]cacheEntry
 	mtx   sync.Mutex
+	done  chan struct{}
 }
 
 func NewCache(interval time.Duration) *Cache {
@@ -20,13 +21,11 @@ func NewCache(interval time.Duration) *Cache {
 	cache := &Cache{
 		items: make(map[string]cacheEntry),
 		mtx:   sync.Mutex{},
+		done:  make(chan struct{}),
 	}
 
-	// create a done channel for controlling Goroutine
-	done := make(chan struct{})
-
 	// start the reap loop as a background Goroutine
-	go cache.reapLoop(interval, done)
+	go cache.reapLoop(interval, cache.done)
 
 	// return the fully prepared cache instance
 	return cache
@@ -47,6 +46,10 @@ func (c *Cache) Get(key string) ([]byte, bool) {
 		return item.val, true
 	}
 	return nil, false
+}
+
+func (c *Cache) Stop() {
+	close(c.done)
 }
 
 func (c *Cache) reapLoop(interval time.Duration, done chan struct{}) {
