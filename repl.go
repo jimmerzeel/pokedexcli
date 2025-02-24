@@ -5,15 +5,22 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/jimmerzeel/pokedexcli/internal/pokeapi"
 )
 
 type cliCommand struct {
 	name        string
 	description string
-	callback    func() error
+	callback    func(*config) error
 }
 
-func startRepl() {
+type config struct {
+	next     string
+	previous string
+}
+
+func startRepl(cfg *config) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Print("Pokedex > ")
@@ -27,7 +34,7 @@ func startRepl() {
 		commandName := text[0]
 
 		if command, ok := getCommands()[commandName]; ok {
-			command.callback()
+			command.callback(cfg)
 		} else {
 			fmt.Println("Unknown command")
 		}
@@ -61,13 +68,13 @@ func getCommands() map[string]cliCommand {
 	}
 }
 
-func commandExit() error {
+func commandExit(cfg *config) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func commandHelp() error {
+func commandHelp(cfg *config) error {
 	fmt.Print("Welcome to the Pokedex!\nUsage:\n\n")
 
 	for _, v := range getCommands() {
@@ -79,9 +86,27 @@ func commandHelp() error {
 // TODO update all commands to accept a pointer to a "config" struct as a parameter.
 // This struct will contains the next and previous URLs that are necessary to paginate through the location areas
 
-func commandMap(url string) error {
+func commandMap(cfg *config) error {
+	// if this is the first call, use the base url, otherwise use the one in config
+	url := "https://pokeapi.co/api/v2/location-area"
+	if cfg.next != "" {
+		url = cfg.next
+	}
+
 	// use pokeapi location-area endpoint to get the location areas
-	// locations, next, previous := getLocationNames(url)
+	locations, next, previous, err := pokeapi.GetLocationNames(url)
+	if err != nil {
+		return err
+	}
+
+	// display the names
+	for _, name := range locations {
+		fmt.Println(name)
+	}
+
+	// update the URLs in the config
+	cfg.next = next
+	cfg.previous = previous
 
 	return nil
 }
