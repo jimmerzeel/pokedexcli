@@ -62,8 +62,13 @@ func getCommands() map[string]cliCommand {
 		},
 		"map": {
 			name:        "map",
-			description: "Displays names of 20 location areas",
+			description: "Displays names of the next 20 location areas",
 			callback:    commandMap,
+		},
+		"mapb": {
+			name:        "mapb",
+			description: "Displays names of the previous 20 location areas",
+			callback:    commandMapBack,
 		},
 	}
 }
@@ -80,17 +85,43 @@ func commandHelp(cfg *config) error {
 	for _, v := range getCommands() {
 		fmt.Printf("%s: %s\n", v.name, v.description)
 	}
+	fmt.Println("")
 	return nil
 }
-
-// TODO update all commands to accept a pointer to a "config" struct as a parameter.
-// This struct will contains the next and previous URLs that are necessary to paginate through the location areas
 
 func commandMap(cfg *config) error {
 	// if this is the first call, use the base url, otherwise use the one in config
 	url := "https://pokeapi.co/api/v2/location-area"
 	if cfg.next != "" {
 		url = cfg.next
+	}
+
+	// use pokeapi location-area endpoint to get the location areas
+	locations, next, previous, err := pokeapi.GetLocationNames(url)
+	if err != nil {
+		return err
+	}
+
+	// display the names
+	for _, name := range locations {
+		fmt.Println(name)
+	}
+
+	// update the URLs in the config
+	cfg.next = next
+	cfg.previous = previous
+
+	return nil
+}
+
+func commandMapBack(cfg *config) error {
+	// if this is the first call, use the base url, otherwise use the one in config
+	url := "https://pokeapi.co/api/v2/location-area"
+	if cfg.previous == "" {
+		fmt.Println("you're on the first page")
+		return nil
+	} else {
+		url = cfg.previous
 	}
 
 	// use pokeapi location-area endpoint to get the location areas
