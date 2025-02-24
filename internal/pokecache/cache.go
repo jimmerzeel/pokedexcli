@@ -20,12 +20,11 @@ func NewCache(interval time.Duration) *Cache {
 	// create a new Cache instance with an initialized map and mutex
 	cache := &Cache{
 		items: make(map[string]cacheEntry),
-		mtx:   sync.Mutex{},
 		done:  make(chan struct{}),
 	}
 
 	// start the reap loop as a background Goroutine
-	go cache.reapLoop(interval, cache.done)
+	go cache.reapLoop(interval)
 
 	// return the fully prepared cache instance
 	return cache
@@ -49,15 +48,21 @@ func (c *Cache) Get(key string) ([]byte, bool) {
 }
 
 func (c *Cache) Stop() {
-	close(c.done)
+	// Safely close the `done` channel once
+	select {
+	case <-c.done: // If already closed, skip
+		return
+	default:
+		close(c.done)
+	}
 }
 
-func (c *Cache) reapLoop(interval time.Duration, done chan struct{}) {
+func (c *Cache) reapLoop(interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
 		select {
-		case <-done:
+		case <-c.done:
 			return
 		case <-ticker.C:
 			c.mtx.Lock()
@@ -65,8 +70,8 @@ func (c *Cache) reapLoop(interval time.Duration, done chan struct{}) {
 				if time.Since(value.createdAt) > interval {
 					delete(c.items, key)
 				}
-				c.mtx.Unlock()
 			}
+			c.mtx.Unlock()
 		}
 	}
 }
