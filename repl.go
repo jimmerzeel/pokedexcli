@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
 
@@ -17,8 +18,9 @@ type cliCommand struct {
 }
 
 type config struct {
-	next     string
-	previous string
+	next          string
+	previous      string
+	caughtPokemon map[string]pokeapi.Pokemon
 }
 
 func startRepl(cfg *config, cache *pokecache.Cache) {
@@ -82,6 +84,11 @@ func getCommands() map[string]cliCommand {
 			name:        "explore",
 			description: "Find Pokemon at a specified location area",
 			callback:    commandExplore,
+		},
+		"catch": {
+			name:        "catch",
+			description: "Catch a Pokemon",
+			callback:    commandCatch,
 		},
 	}
 }
@@ -177,4 +184,38 @@ func commandExplore(cfg *config, cache *pokecache.Cache, args ...string) error {
 	}
 
 	return nil
+}
+
+func commandCatch(cfg *config, cache *pokecache.Cache, args ...string) error {
+	// make sure the pokemon name is provided
+	if len(args) < 1 {
+		fmt.Println("catch command needs a pokemon name")
+		return nil
+	}
+
+	pokemonName := args[0]
+	pokemon, err := pokeapi.GetPokemon(pokemonName, cache)
+	if err != nil {
+		fmt.Printf("%s is not a valid Pokemon name. Use the explore command to find valid pokemon names\n", pokemonName)
+		return err
+	}
+
+	fmt.Printf("Throwing a Pokeball at %s...\n", pokemonName)
+	caught := catchPokemon(pokemon.BaseExperience)
+	if !caught {
+		fmt.Printf("%s escaped!\n", pokemonName)
+		return nil
+	}
+
+	cfg.caughtPokemon[pokemonName] = pokemon
+	fmt.Printf("%s was caught!\n", pokemonName)
+
+	return nil
+}
+
+func catchPokemon(baseExperience int) bool {
+	randomNum := rand.Intn(100)
+	catchThreshold := 4000 / baseExperience
+
+	return randomNum < catchThreshold
 }
