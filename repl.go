@@ -95,6 +95,11 @@ func getCommands() map[string]cliCommand {
 			description: "Check the Pokdex for a Pokemon entry",
 			callback:    commandInspect,
 		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "Show all the Pokemon caught",
+			callback:    commandPokedex,
+		},
 	}
 }
 
@@ -252,4 +257,12 @@ func printPokemonInfo(pokemon pokeapi.Pokemon) {
 	for _, typing := range pokemon.Types {
 		fmt.Printf("- %s\n", typing.Type.Name)
 	}
+}
+
+func commandPokedex(cfg *config, cache *pokecache.Cache, args ...string) error {
+	fmt.Println("Your Pokedex:")
+	for _, pokemon := range cfg.caughtPokemon {
+		fmt.Printf("- %s\n", pokemon.Name)
+	}
+	return nil
 }
