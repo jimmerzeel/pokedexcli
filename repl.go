@@ -90,6 +90,11 @@ func getCommands() map[string]cliCommand {
 			description: "Catch a Pokemon",
 			callback:    commandCatch,
 		},
+		"inspect": {
+			name:        "inspect",
+			description: "Check the Pokdex for a Pokemon entry",
+			callback:    commandInspect,
+		},
 	}
 }
 
@@ -218,4 +223,33 @@ func catchPokemon(baseExperience int) bool {
 	catchThreshold := 4000 / baseExperience
 
 	return randomNum < catchThreshold
+}
+
+func commandInspect(cfg *config, cache *pokecache.Cache, args ...string) error {
+	if len(args) < 1 {
+		fmt.Println("inspect command needs a pokemon name")
+		return nil
+	}
+	pokemonName := args[0]
+	pokemon, caught := cfg.caughtPokemon[pokemonName]
+	if !caught {
+		fmt.Println("you have not caught that pokemon")
+		return nil
+	}
+	printPokemonInfo(pokemon)
+	return nil
+}
+
+func printPokemonInfo(pokemon pokeapi.Pokemon) {
+	fmt.Printf("Name: %s\n", pokemon.Name)
+	fmt.Printf("Height: %d\n", pokemon.Height)
+	fmt.Printf("Weight: %d\n", pokemon.Weight)
+	fmt.Println("Stats:")
+	for _, stat := range pokemon.Stats {
+		fmt.Printf("- %s: %d\n", stat.Stat.Name, stat.BaseStat)
+	}
+	fmt.Println("Types:")
+	for _, typing := range pokemon.Types {
+		fmt.Printf("- %s\n", typing.Type.Name)
+	}
 }
