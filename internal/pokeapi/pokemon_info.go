@@ -1,16 +1,6 @@
 package pokeapi
 
-type MainPokemonResponse struct {
-	Count    int    `json:"count"`
-	Next     string `json:"next"`
-	Previous any    `json:"previous"`
-	Results  []struct {
-		Name string `json:"name"`
-		URL  string `json:"url"`
-	} `json:"results"`
-}
-
-type PokemonResponse struct {
+type Pokemon struct {
 	Abilities []struct {
 		Ability struct {
 			Name string `json:"name"`

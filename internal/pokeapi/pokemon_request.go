@@ -8,15 +8,15 @@ import (
 	"github.com/jimmerzeel/pokedexcli/internal/pokecache"
 )
 
-func GetPokemon(pokemonName string, cache *pokecache.Cache) (PokemonResponse, error) {
+func GetPokemon(pokemonName string, cache *pokecache.Cache) (Pokemon, error) {
 	fullURL := "https://pokeapi.co/api/v2/pokemon/" + pokemonName
 	// check if result is in the cache
 	if item, present := cache.Get(fullURL); present {
-		var pokemonResponse PokemonResponse
+		var pokemonResponse Pokemon
 
 		// unmarshal cached data
 		if err := json.Unmarshal(item, &pokemonResponse); err != nil {
-			return PokemonResponse{}, err
+			return Pokemon{}, err
 		}
 
 		return pokemonResponse, nil
@@ -25,20 +25,20 @@ func GetPokemon(pokemonName string, cache *pokecache.Cache) (PokemonResponse, er
 	// make HTTP GET request
 	res, err := http.Get(fullURL)
 	if err != nil {
-		return PokemonResponse{}, err
+		return Pokemon{}, err
 	}
 	defer res.Body.Close()
 
 	// read the data from the HTTP request
 	data, err := io.ReadAll(res.Body)
 	if err != nil {
-		return PokemonResponse{}, err
+		return Pokemon{}, err
 	}
 
 	// unmarshal the data into a slice of bytes
-	var pokemonResponse PokemonResponse
+	var pokemonResponse Pokemon
 	if err = json.Unmarshal(data, &pokemonResponse); err != nil {
-		return PokemonResponse{}, err
+		return Pokemon{}, err
 	}
 
 	cache.Add(fullURL, data)
