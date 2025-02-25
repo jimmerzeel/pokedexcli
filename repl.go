@@ -13,7 +13,7 @@ import (
 type cliCommand struct {
 	name        string
 	description string
-	callback    func(*config, *pokecache.Cache, []string) error
+	callback    func(*config, *pokecache.Cache, ...string) error
 }
 
 type config struct {
@@ -33,9 +33,16 @@ func startRepl(cfg *config, cache *pokecache.Cache) {
 		}
 
 		commandName := text[0]
+		args := []string{}
+		if len(text) > 1 {
+			args = text[1:]
+		}
 
 		if command, ok := getCommands()[commandName]; ok {
-			command.callback(cfg, cache, text[1:])
+			err := command.callback(cfg, cache, args...)
+			if err != nil {
+				fmt.Println(err)
+			}
 		} else {
 			fmt.Println("Unknown command")
 		}
@@ -79,13 +86,13 @@ func getCommands() map[string]cliCommand {
 	}
 }
 
-func commandExit(cfg *config, cache *pokecache.Cache, args []string) error {
+func commandExit(cfg *config, cache *pokecache.Cache, args ...string) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func commandHelp(cfg *config, cache *pokecache.Cache, args []string) error {
+func commandHelp(cfg *config, cache *pokecache.Cache, args ...string) error {
 	fmt.Print("Welcome to the Pokedex!\nUsage:\n\n")
 
 	for _, v := range getCommands() {
@@ -95,7 +102,7 @@ func commandHelp(cfg *config, cache *pokecache.Cache, args []string) error {
 	return nil
 }
 
-func commandMap(cfg *config, cache *pokecache.Cache, args []string) error {
+func commandMap(cfg *config, cache *pokecache.Cache, args ...string) error {
 	// if this is the first call, use the base url, otherwise use the one in config
 	url := "https://pokeapi.co/api/v2/location-area"
 	if cfg.next != "" {
@@ -120,7 +127,7 @@ func commandMap(cfg *config, cache *pokecache.Cache, args []string) error {
 	return nil
 }
 
-func commandMapBack(cfg *config, cache *pokecache.Cache, args []string) error {
+func commandMapBack(cfg *config, cache *pokecache.Cache, args ...string) error {
 	// if this is the first call, use the base url, otherwise use the one in config
 	url := "https://pokeapi.co/api/v2/location-area"
 	if cfg.previous == "" {
@@ -148,19 +155,15 @@ func commandMapBack(cfg *config, cache *pokecache.Cache, args []string) error {
 	return nil
 }
 
-func commandExplore(cfg *config, cache *pokecache.Cache, args []string) error {
+func commandExplore(cfg *config, cache *pokecache.Cache, args ...string) error {
 	// make sure a location area is provided
 	if len(args) < 1 {
 		fmt.Println("explore command needs a location name area")
 		return nil
 	}
 
-	baseURL := "https://pokeapi.co/api/v2/location-area/"
 	locationArea := args[0]
-
-	fullURL := baseURL + locationArea
-
-	pokemonEncounters, err := pokeapi.GetPokemonAtLocation(fullURL, cache)
+	pokemonEncounters, err := pokeapi.GetPokemonAtLocation(locationArea, cache)
 	if err != nil {
 		fmt.Printf("%s is not a valid location. Use the map or mapb command to find valid location names\n", locationArea)
 		return err

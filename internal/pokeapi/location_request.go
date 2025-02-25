@@ -56,7 +56,9 @@ func GetLocationNames(url string, cache *pokecache.Cache) ([]string, string, str
 	return locationNames, mainResponse.Next, mainResponse.Previous, nil
 }
 
-func GetPokemonAtLocation(fullURL string, cache *pokecache.Cache) ([]string, error) {
+func GetPokemonAtLocation(locationName string, cache *pokecache.Cache) ([]string, error) {
+	fullURL := "https://pokeapi.co/api/v2/location-area/" + locationName
+
 	// check if result is in the cache
 	if item, present := cache.Get(fullURL); present {
 		var pokemonAtLocationResponse PokemonAtLocationResponse
